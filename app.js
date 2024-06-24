@@ -1,70 +1,54 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const request = require("request");
-const https = require("https");
+const date = require(__dirname + "/date.js")
 
 const app = express();
 
-app.use(express.static("public"));
-app.use(bodyParser.urlencoded({extended: true}));
+const items = ["Buy Food", "Make Food", "Eat Food"];
+const workItems = [];
 
-app.get("/", function(req, res) {
-  res.sendFile(__dirname + "/signup.html");
+app.set("view engine", "ejs");
+
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(express.static("public"));
+
+app.get("/", function(req, res){
+
+const day = date.getDate();
+
+  res.render("list", {listTitle: day, newListItems: items});
+
 });
 
-app.post("/", function (req, res) {
+app.post("/", function(req, res){
 
-  const firstName = req.body.fName;
-  const lastName = req.body.lName;
-  const email = req.body.email;
+  const item = req.body.newItem;
 
-  const data = {
-    members : [
-      {
-        email_address: email,
-        status: "subscribed",
-        merge_fields: {
-          FNAME: firstName,
-          LNAME: lastName
-        }
-      }
-    ]
-  };
-
-  const jsonData = JSON.stringify(data);
-
-  const url = "https://us13.api.mailchimp.com/3.0/lists/80b9cf8341";
-
-  const options = {
-    method: "POST",
-    auth:"richard1:75da99c644982dc609979d5ee6a60d37-us13"
+  if (req.body.list === "Work") {
+    workItems.push(item);
+    res.redirect("/work");
+  } else {
+    items.push(item);
+    res.redirect("/");
   }
 
-  const request = https.request(url, options, function(response) {
-
-    if (response.statusCode === 200) {
-      res.sendFile(__dirname + "/success.html");
-    } else {
-      res.sendFile(__dirname + "/failure.html");
-    }
-
-  response.on("data", function(data){
-      console.log(JSON.parse(data));
-    })
-  })
-
-  request.write(jsonData);
-  request.end();
-
-});
-
-app.post("/failure", function (req, res) {
   res.redirect("/");
-})
-
-app.listen(process.env.PORT || 3000, function() {
-  console.log("Server is running on port 3000");
 });
 
-// 75da99c644982dc609979d5ee6a60d37-us13
-//80b9cf8341
+app.get("/work", function(req, res){
+  res.render("list", {listTitle: "Work List", newListItems: workItems});
+});
+
+app.post("/work", function(res, req){
+  let item = req.body.newItem;
+  workItems.push(item);
+  res.redirect("/work");
+});
+
+app.get("/about", function(req, res){
+  res.render("about");
+});
+
+app.listen(3000, function (){
+  console.log("Server started on port 3000");
+});
